@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { authEnvSchema } from '@app/common';
+import { createTypeOrmOptions } from '@app/database';
+import { AuthModule } from './auth/auth.module';
+import { AuthUser } from './database/entities/auth-user.entity';
+import { RefreshToken } from './database/entities/refresh-token.entity';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
+      validationSchema: authEnvSchema,
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        createTypeOrmOptions({
+          host: config.getOrThrow<string>('POSTGRES_HOST'),
+          port: config.get<number>('POSTGRES_PORT', 5432),
+          username: config.getOrThrow<string>('POSTGRES_USER'),
+          password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
+          database: config.getOrThrow<string>('AUTH_POSTGRES_DATABASE'),
+          entities: [AuthUser, RefreshToken],
+        }),
+    }),
+    AuthModule,
+  ],
+})
+export class AppModule {}
