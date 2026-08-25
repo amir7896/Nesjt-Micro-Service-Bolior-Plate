@@ -8,13 +8,14 @@ Production-style NestJS monorepo with an HTTP API Gateway, Auth and User microse
 Client
   │
   ▼
-API Gateway :3000
-  • REST + Swagger (`/api/docs`)
+API Gateway :3002
+  • REST + Swagger (`/api/docs`) + Socket.IO `/chat`
   • JWT auth, RBAC, DTO validation
   • Redis cache, rate limit, token blacklist
   │
   ├─ RabbitMQ `auth_queue` ──► Auth Service  ── PostgreSQL (`AUTH_POSTGRES_DATABASE`)
-  └─ RabbitMQ `user_queue` ──► User Service  ── PostgreSQL (`USER_POSTGRES_DATABASE`)
+  ├─ RabbitMQ `user_queue` ──► User Service  ── PostgreSQL (`USER_POSTGRES_DATABASE`)
+  └─ RabbitMQ `chat_queue` ──► Chat Service  ── PostgreSQL (`CHAT_POSTGRES_DATABASE`)
 ```
 
 Each service owns its database. The gateway never talks to PostgreSQL directly.
@@ -44,6 +45,7 @@ apps/
       auth.controller.ts
       dto/  swagger/  guards/  strategies/
     users/                        HTTP users feature
+    chat/                         HTTP chat + Socket.IO gateway
     health/                       liveness + RabbitMQ/Redis readiness
     infrastructure/proxy/         RabbitMQ ClientProxy wrapper
   auth-service/src/
@@ -54,9 +56,13 @@ apps/
     app.module.ts
     users/
     database/
+  chat-service/src/
+    app.module.ts
+    chat/
+    database/
 libs/
   common/                         envelopes, pipes, Redis, RMQ, env
-  contracts/                      message patterns + payloads (auth/, users/)
+  contracts/                      message patterns + payloads (auth/, users/, chat/)
   database/                       shared TypeORM factory
 ```
 
@@ -64,9 +70,9 @@ libs/
 
 | Tool | Why | Default port |
 | --- | --- | --- |
-| Node.js 20+ and npm | Run the three Nest apps | Gateway `3000`, Auth `3001`, Users `3002` |
+| Node.js 20+ and npm | Run the Nest apps | Gateway `3002`, Auth `3001`, Users `3003`, Chat `3004` |
 | Docker Engine + Compose | Recommended way to run Postgres, RabbitMQ, Redis | — |
-| PostgreSQL | Auth DB + Users DB | `5432` |
+| PostgreSQL | Auth DB + Users DB + Chat DB | `5432` |
 | RabbitMQ | Gateway ↔ microservice messages | AMQP `5672`, UI `15672` |
 | Redis | Gateway cache + access-token blacklist | `6379` |
 
@@ -181,6 +187,7 @@ If you already have local Postgres, Redis, or RabbitMQ, use those credentials. I
 - `CORS_ORIGIN`
 - `AUTH_HTTP_PORT`
 - `USER_HTTP_PORT`
+- `CHAT_HTTP_PORT`
 
 **JWT** (gateway + auth)
 
@@ -194,7 +201,7 @@ If you already have local Postgres, Redis, or RabbitMQ, use those credentials. I
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 
-**PostgreSQL** (auth + users + Compose)
+**PostgreSQL** (auth + users + chat + Compose)
 
 - `POSTGRES_HOST`
 - `POSTGRES_PORT`
@@ -202,6 +209,7 @@ If you already have local Postgres, Redis, or RabbitMQ, use those credentials. I
 - `POSTGRES_PASSWORD`
 - `AUTH_POSTGRES_DATABASE`
 - `USER_POSTGRES_DATABASE`
+- `CHAT_POSTGRES_DATABASE`
 
 **RabbitMQ** (all apps + Compose)
 
@@ -311,16 +319,55 @@ Never enable TypeORM `synchronize`. Schema changes go through migrations. After 
 npm run start:dev
 ```
 
-That watches the API Gateway, Auth Service, and User Service together. Stop with `Ctrl+C`.
+That watches the API Gateway, Auth Service, User Service, and Chat Service together. Stop with `Ctrl+C`.
 
 | URL | What |
 | --- | --- |
-| http://localhost:3000/api | API |
-| http://localhost:3000/api/docs | Swagger |
-| http://localhost:3000/api/health | Gateway + RabbitMQ + Redis health |
+| http://localhost:3002/api | API |
+| http://localhost:3002/api/docs | Swagger |
+| http://localhost:3002/api/health | Gateway + RabbitMQ + Redis health |
+| ws://localhost:3002/chat | Socket.IO chat namespace |
 | http://localhost:15672 | RabbitMQ UI (user/password from `.env`) |
 
 Log in at `/api/docs`, then use **Authorize** and paste the access token.
+
+A Vite + React 18.3 test UI lives in [`Ms-Frontend`](./Ms-Frontend). With the gateway running: `npm run start:frontend` then open http://localhost:5173.
+
+## Chat
+
+REST under `/api/chat` (JWT required). Step-by-step Postman requests (including Socket.IO) are in [`Chat-Postman-Testing.pdf`](./Chat-Postman-Testing.pdf).
+
+- `POST /api/chat/private` — start or reuse a 1:1 conversation (`userId` is the other account id)
+- `POST /api/chat/groups` — create a group
+- `GET /api/chat/conversations` — list my chats (`unreadCount`, member `status`)
+- `GET /api/chat/conversations/:id/messages` — history (newest first; each message has `type` and `seenBy`)
+- `POST /api/chat/conversations/:id/messages` — send a message (`type` defaults to `text`)
+- `POST /api/chat/conversations/:id/typing` — broadcast typing
+- `POST /api/chat/conversations/:id/seen` — mark messages as seen
+- `GET /api/chat/presence/:userId` — `online` or `offline`
+
+Realtime: connect Socket.IO to `/chat` with `auth: { token: '<accessToken>' }`. On connect the socket joins only `user:{id}` (cheap). Open a conversation with `chat:join` so typing/presence land in that room; messages also fan out to each member’s `user:{id}` room. Client events: `chat:join`, `chat:message`, `chat:typing`, `chat:seen`, `chat:heartbeat`. Server emits `chat:message`, `chat:typing`, `chat:seen`, and `chat:presence`.
+
+Create the chat database once (`CHAT_POSTGRES_DATABASE` in `.env`), then `npm run migration:chat:run`. Existing Compose volumes do not pick up new databases until you create them manually.
+
+## Performance and high concurrency
+
+A single Node process cannot hold 1,000,000 open sockets. This platform is built so many users can call APIs at once: extra requests **wait in line** for a free RabbitMQ slot (they are not turned away with 503), and you scale out with more gateway workers and more auth/user/chat consumers.
+
+What is in the code:
+
+- **Socket.IO Redis adapter** so several gateway workers share chat rooms and presence
+- **Optional `GATEWAY_WORKERS`** (set `0` to use all CPU cores)
+- **In-flight queue** (`GATEWAY_MAX_INFLIGHT`) — at most N RabbitMQ round-trips run at once; extra calls wait FIFO and still complete
+- **PostgreSQL connection pools** (`POSTGRES_POOL_MAX`) instead of one DB connection per request
+- **RabbitMQ prefetch** and durable queues; gateway ClientProxy keeps `noAck: true`
+- **JWT VALIDATE cache** in Redis (short TTL) so every HTTP/WS call does not hit Auth Service
+- **Cheap WebSocket connect** (join `user:{id}` only; no list-all-conversations query)
+- **Chat indexes** on `(conversationId, createdAt)` for message history and unread counts
+- **Timeouts**, Helmet, compression, body-size limit, trust proxy, login rate limits
+- **Production access logs off**; Redis `volatile-lru`; Postgres `max_connections`
+
+Full Postman steps, Docker/migration commands, and this performance list are in [`Chat-Postman-Testing.pdf`](./Chat-Postman-Testing.pdf).
 
 ## Auth on local
 
@@ -330,11 +377,13 @@ Register always creates role `user`. Set `ADMIN_EMAIL` (and `ADMIN_PASSWORD` if 
 
 | Script | Purpose |
 | --- | --- |
-| `npm run start:dev` | Watch all three apps |
+| `npm run start:dev` | Watch all four apps |
 | `npm run start:gateway` | Gateway only |
 | `npm run start:auth` | Auth service only |
 | `npm run start:users` | User service only |
-| `npm run migration:run` | Apply both service migrations |
+| `npm run start:chat` | Chat service only |
+| `npm run start:frontend` | Vite React test UI (`Ms-Frontend`, port 5173) |
+| `npm run migration:run` | Apply auth, users, and chat migrations |
 | `npm run docker:up` | Start PostgreSQL, RabbitMQ, and Redis |
 | `npm run docker:down` | Stop Compose containers (keep volumes) |
 
@@ -348,5 +397,6 @@ Register always creates role `user`. Set `ADMIN_EMAIL` (and `ADMIN_PASSWORD` if 
 - Request IDs on every response
 - Soft deletes on user profiles
 - Refresh-token rotation and hashed token storage
-- Redis-backed gateway cache and access-token blacklist
+- Redis-backed gateway cache, access-token blacklist, presence, and Socket.IO adapter
 - Structured logging and health checks
+- Connection pools, FIFO in-flight queue, request timeouts, and horizontal gateway workers

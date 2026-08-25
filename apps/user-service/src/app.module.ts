@@ -23,6 +23,8 @@ import { UsersModule } from './users/users.module';
           password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
           database: config.getOrThrow<string>('USER_POSTGRES_DATABASE'),
           entities: [UserProfile],
+          poolMax: config.get<number>('POSTGRES_POOL_MAX', 20),
+          poolMin: config.get<number>('POSTGRES_POOL_MIN', 2),
         }),
     }),
     UsersModule,

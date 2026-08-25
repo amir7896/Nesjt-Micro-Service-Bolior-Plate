@@ -4,6 +4,8 @@ import { ClientsModule } from '@nestjs/microservices';
 import {
   AUTH_QUEUE,
   AUTH_SERVICE,
+  CHAT_QUEUE,
+  CHAT_SERVICE,
   USER_QUEUE,
   USER_SERVICE,
   createRmqClientOptions,
@@ -25,6 +27,12 @@ import { MicroserviceProxy } from './microservice.proxy';
         inject: [ConfigService],
         useFactory: (config: ConfigService) =>
           createRmqClientOptions(config, USER_QUEUE),
+      },
+      {
+        name: CHAT_SERVICE,
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) =>
+          createRmqClientOptions(config, CHAT_QUEUE),
       },
     ]),
   ],

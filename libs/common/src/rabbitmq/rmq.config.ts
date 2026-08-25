@@ -3,6 +3,7 @@ import { RmqOptions, Transport } from '@nestjs/microservices';
 
 export const AUTH_QUEUE = 'auth_queue';
 export const USER_QUEUE = 'user_queue';
+export const CHAT_QUEUE = 'chat_queue';
 
 export function buildRmqUrl(config: ConfigService): string {
   const user = encodeURIComponent(config.get<string>('RABBITMQ_USER', 'nest'));
@@ -24,8 +25,12 @@ function baseRmqOptions(config: ConfigService, queue: string) {
     queueOptions: {
       durable: true,
     },
-    prefetchCount: 10,
+    prefetchCount: config.get<number>('RABBITMQ_PREFETCH', 16),
     persistent: true,
+    socketOptions: {
+      heartbeatIntervalInSeconds: 30,
+      reconnectTimeInSeconds: 5,
+    },
   };
 }
 

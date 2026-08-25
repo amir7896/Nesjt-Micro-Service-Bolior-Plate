@@ -7,7 +7,7 @@ export class RabbitMqHealthSchema {
   @ApiProperty({ example: 'RabbitMQ' })
   transport!: string;
 
-  @ApiProperty({ type: [String], example: ['auth_queue', 'user_queue'] })
+  @ApiProperty({ type: [String], example: ['auth_queue', 'user_queue', 'chat_queue'] })
   queues!: string[];
 }
 
@@ -33,7 +33,7 @@ export class HealthInfoSchema {
       rabbitmq: {
         status: 'up',
         transport: 'RabbitMQ',
-        queues: ['auth_queue', 'user_queue'],
+        queues: ['auth_queue', 'user_queue', 'chat_queue'],
       },
       redis: {
         status: 'up',

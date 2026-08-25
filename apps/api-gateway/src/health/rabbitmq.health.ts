@@ -5,7 +5,7 @@ import {
   HealthIndicatorService,
 } from '@nestjs/terminus';
 import { connect } from 'amqplib';
-import { AUTH_QUEUE, USER_QUEUE, buildRmqUrl } from '@app/common';
+import { AUTH_QUEUE, CHAT_QUEUE, USER_QUEUE, buildRmqUrl } from '@app/common';
 
 @Injectable()
 export class RabbitMqHealthIndicator {
@@ -23,7 +23,7 @@ export class RabbitMqHealthIndicator {
       await connection.close();
       return indicator.up({
         transport: 'RabbitMQ',
-        queues: [AUTH_QUEUE, USER_QUEUE],
+        queues: [AUTH_QUEUE, USER_QUEUE, CHAT_QUEUE],
       });
     } catch (error) {
       return indicator.down({

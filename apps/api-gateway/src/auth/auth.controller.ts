@@ -9,6 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -24,6 +25,7 @@ import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { AuthSessionCache } from './auth-session.cache';
 import {
   AuthDocs,
   ChangePasswordDocs,
@@ -40,9 +42,11 @@ export class AuthController {
   constructor(
     private readonly proxy: MicroserviceProxy,
     private readonly blacklist: TokenBlacklistService,
+    private readonly sessionCache: AuthSessionCache,
   ) {}
 
   @Public()
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @RegisterDocs()
@@ -72,6 +76,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @LoginDocs()
@@ -85,6 +90,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @RefreshDocs()
@@ -112,6 +118,7 @@ export class AuthController {
     if (accessToken) {
       await this.blacklist.revokeAccessToken(accessToken);
     }
+    await this.sessionCache.invalidate(user.id);
 
     await this.proxy.sendAuth(AUTH_PATTERNS.LOGOUT, {
       userId: user.id,
@@ -150,6 +157,7 @@ export class AuthController {
     if (accessToken) {
       await this.blacklist.revokeAccessToken(accessToken);
     }
+    await this.sessionCache.invalidate(user.id);
     return { message: AUTH_SUCCESS_MESSAGES.PASSWORD_CHANGED, data };
   }
 }

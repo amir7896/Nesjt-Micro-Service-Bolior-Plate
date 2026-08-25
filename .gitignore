@@ -45,3 +45,7 @@ lerna-debug.log*
 
 # docker
 docker-data
+
+# frontend
+Ms-Frontend/node_modules
+Ms-Frontend/dist

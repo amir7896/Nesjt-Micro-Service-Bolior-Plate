@@ -24,6 +24,8 @@ import { RefreshToken } from './database/entities/refresh-token.entity';
           password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
           database: config.getOrThrow<string>('AUTH_POSTGRES_DATABASE'),
           entities: [AuthUser, RefreshToken],
+          poolMax: config.get<number>('POSTGRES_POOL_MAX', 20),
+          poolMin: config.get<number>('POSTGRES_POOL_MIN', 2),
         }),
     }),
     AuthModule,

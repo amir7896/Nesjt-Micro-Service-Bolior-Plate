@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -17,6 +22,7 @@ import { RedisCacheModule } from '@app/common/redis/redis-cache.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { ChatModule } from './chat/chat.module';
 import { HealthModule } from './health/health.module';
 import { ProxyModule } from './infrastructure/proxy/proxy.module';
 import { UsersModule } from './users/users.module';
@@ -37,7 +43,7 @@ import { UsersModule } from './users/users.module';
                 options: { singleLine: true, colorize: true },
               }
             : undefined,
-        autoLogging: true,
+        autoLogging: process.env.NODE_ENV !== 'production',
         quietReqLogger: true,
       },
       forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
@@ -58,6 +64,7 @@ import { UsersModule } from './users/users.module';
     ProxyModule,
     AuthModule,
     UsersModule,
+    ChatModule,
     HealthModule,
   ],
   providers: [

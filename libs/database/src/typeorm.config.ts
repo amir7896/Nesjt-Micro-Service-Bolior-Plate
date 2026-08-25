@@ -8,12 +8,16 @@ export interface PostgresConnectionInput {
   database: string;
   entities: TypeOrmModuleOptions['entities'];
   migrations?: TypeOrmModuleOptions['migrations'];
+  poolMax?: number;
+  poolMin?: number;
 }
 
 export function createTypeOrmOptions(
   input: PostgresConnectionInput,
 ): TypeOrmModuleOptions {
   const isProduction = process.env.NODE_ENV === 'production';
+  const poolMax = input.poolMax ?? Number(process.env.POSTGRES_POOL_MAX ?? 20);
+  const poolMin = input.poolMin ?? Number(process.env.POSTGRES_POOL_MIN ?? 2);
 
   return {
     type: 'postgres',
@@ -29,7 +33,11 @@ export function createTypeOrmOptions(
     uuidExtension: 'pgcrypto',
     logging: isProduction ? ['error'] : ['error', 'warn'],
     extra: {
-      max: 10,
+      max: poolMax,
+      min: poolMin,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+      statement_timeout: 10_000,
     },
     retryAttempts: 10,
     retryDelay: 3000,

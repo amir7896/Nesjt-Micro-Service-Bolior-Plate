@@ -37,3 +37,19 @@ export const USER_SUCCESS_MESSAGES = {
 export const HEALTH_SUCCESS_MESSAGES = {
   HEALTHY: 'Service is healthy',
 } as const;
+
+export const CHAT_SUCCESS_MESSAGES = {
+  PRIVATE_READY: 'Private conversation ready',
+  GROUP_CREATED: 'Group created successfully',
+  CONVERSATIONS_FETCHED: 'Conversations retrieved successfully',
+  CONVERSATION_FETCHED: 'Conversation retrieved successfully',
+  MESSAGES_FETCHED: 'Messages retrieved successfully',
+  MESSAGE_SENT: 'Message sent successfully',
+  MEMBERS_ADDED: 'Members added successfully',
+  MEMBER_REMOVED: 'Member removed successfully',
+  LEFT: 'You left the conversation',
+  GROUP_UPDATED: 'Group updated successfully',
+  TYPING_UPDATED: 'Typing status updated',
+  SEEN_UPDATED: 'Messages marked as seen',
+  PRESENCE_FETCHED: 'Presence retrieved successfully',
+} as const;

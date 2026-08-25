@@ -8,8 +8,9 @@ RUN npm run build:users
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=512
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
-EXPOSE 3002
+EXPOSE 3003
 CMD ["node", "dist/apps/user-service/main.js"]

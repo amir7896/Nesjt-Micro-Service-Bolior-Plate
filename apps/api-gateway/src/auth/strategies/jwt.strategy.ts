@@ -12,12 +12,14 @@ import {
 import { AUTH_PATTERNS } from '@app/contracts';
 import type { AuthUserView } from '@app/contracts';
 import { MicroserviceProxy } from '../../infrastructure/proxy/microservice.proxy';
+import { AuthSessionCache } from '../auth-session.cache';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: ConfigService,
     private readonly proxy: MicroserviceProxy,
+    private readonly sessionCache: AuthSessionCache,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -32,12 +34,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     try {
-      const user = await this.proxy.sendAuth<AuthUserView>(
-        AUTH_PATTERNS.VALIDATE,
-        {
+      const cached = await this.sessionCache.get(payload.sub);
+      const user =
+        cached ??
+        (await this.proxy.sendAuth<AuthUserView>(AUTH_PATTERNS.VALIDATE, {
           userId: payload.sub,
-        },
-      );
+        }));
+      if (!cached) {
+        await this.sessionCache.set(user);
+      }
 
       return {
         id: user.id,

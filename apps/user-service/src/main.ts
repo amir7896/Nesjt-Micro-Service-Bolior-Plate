@@ -13,7 +13,7 @@ async function bootstrap() {
   app.connectMicroservice(createRmqServerOptions(config, USER_QUEUE));
   await app.startAllMicroservices();
 
-  const port = config.get<number>('USER_HTTP_PORT', 3002);
+  const port = config.get<number>('USER_HTTP_PORT', 3003);
   await app.listen(port);
 
   logger.log(

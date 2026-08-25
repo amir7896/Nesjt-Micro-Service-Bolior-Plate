@@ -4,6 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   Observable,
   TimeoutError,
@@ -15,12 +16,20 @@ import { GatewayTimeoutAppException } from '../exceptions/app.exception';
 
 @Injectable()
 export class TimeoutInterceptor implements NestInterceptor {
-  private readonly ms = 10_000;
+  private readonly ms: number;
+
+  constructor(config: ConfigService) {
+    this.ms = config.get<number>('GATEWAY_TIMEOUT_MS', 10_000);
+  }
 
   intercept(
-    _context: ExecutionContext,
+    context: ExecutionContext,
     next: CallHandler,
   ): Observable<unknown> {
+    if (context.getType() !== 'http') {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       timeout(this.ms),
       catchError((error: unknown) => {

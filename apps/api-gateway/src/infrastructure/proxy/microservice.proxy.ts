@@ -1,18 +1,34 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import {
   AUTH_SERVICE,
+  CHAT_SERVICE,
+  GatewayTimeoutAppException,
+  InflightLimiter,
   USER_SERVICE,
-  ServiceUnavailableAppException,
 } from '@app/common';
 
 @Injectable()
 export class MicroserviceProxy {
+  private readonly limiter: InflightLimiter;
+  private readonly rpcTimeoutMs: number;
+
   constructor(
     @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,
     @Inject(USER_SERVICE) private readonly userClient: ClientProxy,
-  ) {}
+    @Inject(CHAT_SERVICE) private readonly chatClient: ClientProxy,
+    config: ConfigService,
+  ) {
+    this.limiter = new InflightLimiter(
+      config.get<number>('GATEWAY_MAX_INFLIGHT', 2_000),
+    );
+    this.rpcTimeoutMs = Math.min(
+      config.get<number>('GATEWAY_TIMEOUT_MS', 10_000),
+      8_000,
+    );
+  }
 
   sendAuth<TResult, TInput = unknown>(
     pattern: string,
@@ -28,22 +44,34 @@ export class MicroserviceProxy {
     return this.send(this.userClient, pattern, payload);
   }
 
+  sendChat<TResult, TInput = unknown>(
+    pattern: string,
+    payload: TInput,
+  ): Promise<TResult> {
+    return this.send(this.chatClient, pattern, payload);
+  }
+
   private async send<TResult, TInput>(
     client: ClientProxy,
     pattern: string,
     payload: TInput,
   ): Promise<TResult> {
+    await this.limiter.acquire();
     try {
       return await firstValueFrom(
-        client.send<TResult, TInput>(pattern, payload).pipe(timeout(8_000)),
+        client
+          .send<TResult, TInput>(pattern, payload)
+          .pipe(timeout(this.rpcTimeoutMs)),
       );
     } catch (error) {
       if (this.isTimeout(error)) {
-        throw new ServiceUnavailableAppException(
+        throw new GatewayTimeoutAppException(
           'The upstream service did not respond in time',
         );
       }
       throw new RpcException(this.asRpcPayload(error));
+    } finally {
+      this.limiter.release();
     }
   }
 
