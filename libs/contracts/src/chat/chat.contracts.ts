@@ -17,6 +17,7 @@ export const CHAT_PATTERNS = {
   REMOVE_MEMBER: 'chat.remove_member',
   LEAVE: 'chat.leave',
   UPDATE_GROUP: 'chat.update_group',
+  DELETE_GROUP: 'chat.delete_group',
 } as const;
 
 export interface CreatePrivateChatPayload {

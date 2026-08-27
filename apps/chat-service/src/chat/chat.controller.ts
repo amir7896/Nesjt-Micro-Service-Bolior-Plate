@@ -73,4 +73,9 @@ export class ChatController {
   updateGroup(@Payload() payload: UpdateGroupPayload) {
     return this.chatService.updateGroup(payload);
   }
+
+  @MessagePattern(CHAT_PATTERNS.DELETE_GROUP)
+  deleteGroup(@Payload() payload: ConversationActorPayload) {
+    return this.chatService.deleteGroup(payload);
+  }
 }

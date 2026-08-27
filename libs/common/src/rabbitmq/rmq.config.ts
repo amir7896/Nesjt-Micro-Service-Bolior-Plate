@@ -34,7 +34,7 @@ function baseRmqOptions(config: ConfigService, queue: string) {
   };
 }
 
-/** Microservice workers. Manual ack is allowed on the request queue. */
+/** Microservice workers. Auto-ack so a stuck RPC reply cannot pin the queue. */
 export function createRmqServerOptions(
   config: ConfigService,
   queue: string,
@@ -43,7 +43,7 @@ export function createRmqServerOptions(
     transport: Transport.RMQ,
     options: {
       ...baseRmqOptions(config, queue),
-      noAck: false,
+      noAck: true,
     },
   };
 }

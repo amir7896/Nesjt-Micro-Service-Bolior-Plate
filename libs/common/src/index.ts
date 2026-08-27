@@ -28,3 +28,4 @@ export * from './middleware/request-id.middleware';
 export * from './config/env.validation';
 export * from './redis/redis.module';
 export * from './rabbitmq/rmq.config';
+export * from './bootstrap/listen-http';

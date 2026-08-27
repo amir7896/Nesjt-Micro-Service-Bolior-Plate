@@ -52,7 +52,8 @@
     "migration:chat:show": "npm run typeorm:chat -- migration:show",
     "migration:run": "npm run migration:auth:run && npm run migration:users:run && npm run migration:chat:run",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:up:all": "docker compose --profile full up -d",
+    "docker:down": "docker compose --profile full down"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.6",

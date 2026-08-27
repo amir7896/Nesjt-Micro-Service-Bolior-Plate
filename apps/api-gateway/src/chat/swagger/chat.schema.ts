@@ -92,6 +92,11 @@ export class LeftResultSchema {
   left!: boolean;
 }
 
+export class DeletedGroupResultSchema {
+  @ApiProperty({ example: true })
+  deleted!: boolean;
+}
+
 export class TypingResultSchema {
   @ApiProperty({ example: true })
   ok!: boolean;

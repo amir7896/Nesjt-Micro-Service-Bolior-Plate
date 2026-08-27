@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -11,7 +11,8 @@ import {
 } from '@app/common';
 
 @Injectable()
-export class MicroserviceProxy {
+export class MicroserviceProxy implements OnModuleInit {
+  private readonly logger = new Logger(MicroserviceProxy.name);
   private readonly limiter: InflightLimiter;
   private readonly rpcTimeoutMs: number;
 
@@ -28,6 +29,28 @@ export class MicroserviceProxy {
       config.get<number>('GATEWAY_TIMEOUT_MS', 10_000),
       8_000,
     );
+  }
+
+  async onModuleInit(): Promise<void> {
+    try {
+      await Promise.race([
+        Promise.all([
+          this.authClient.connect(),
+          this.userClient.connect(),
+          this.chatClient.connect(),
+        ]),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('connect timed out')), 5_000);
+        }),
+      ]);
+      this.logger.log('RabbitMQ clients connected');
+    } catch (error) {
+      this.logger.error(
+        `RabbitMQ clients did not connect: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   sendAuth<TResult, TInput = unknown>(

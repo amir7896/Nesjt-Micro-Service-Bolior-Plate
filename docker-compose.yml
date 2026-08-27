@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: nest-postgres
+    profiles: ['full']
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nest}
@@ -49,6 +50,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: nest-redis
+    profiles: ['full']
     restart: unless-stopped
     ports:
       - '${REDIS_PORT:-6379}:6379'

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { QueryFailedError, Repository } from 'typeorm';
 import {
   UserRole,
@@ -291,6 +291,7 @@ export class AuthService implements OnModuleInit {
       {
         secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
         expiresIn: refreshExpiresIn as `${number}${'s' | 'm' | 'h' | 'd'}`,
+        jwtid: randomUUID(),
       },
     );
 

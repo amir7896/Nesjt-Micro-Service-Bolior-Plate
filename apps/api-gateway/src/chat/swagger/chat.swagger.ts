@@ -22,6 +22,7 @@ import {
 } from '../dto/chat.dto';
 import {
   ConversationSchema,
+  DeletedGroupResultSchema,
   LeftResultSchema,
   MessageSchema,
   PresenceSchema,
@@ -125,6 +126,18 @@ export const UpdateGroupDocs = () =>
     ApiBody({ type: UpdateGroupDto }),
     ApiWrappedResponse(ConversationSchema, {
       description: 'Group updated successfully',
+    }),
+  );
+
+export const DeleteGroupDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Delete a group',
+      description: 'Only the member who created the group can delete it.',
+    }),
+    ApiParam({ name: 'id', type: String, format: 'uuid' }),
+    ApiWrappedResponse(DeletedGroupResultSchema, {
+      description: 'Group deleted successfully',
     }),
   );
 

@@ -244,6 +244,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  broadcastGroupDeleted(
+    conversationId: string,
+    recipientIds: string[] = [],
+  ): void {
+    this.emitToMembers(
+      'chat:group_deleted',
+      { conversationId },
+      conversationId,
+      recipientIds,
+    );
+  }
+
   private emitToMembers(
     event: string,
     payload: unknown,

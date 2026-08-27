@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { USER_QUEUE, createRmqServerOptions } from '@app/common';
+import { USER_QUEUE, createRmqServerOptions, listenHttpWithRetry } from '@app/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -14,10 +14,12 @@ async function bootstrap() {
   await app.startAllMicroservices();
 
   const port = config.get<number>('USER_HTTP_PORT', 3003);
-  await app.listen(port);
+  const httpUp = await listenHttpWithRetry(app, port, logger);
 
   logger.log(
-    `User microservice connected to RabbitMQ queue "${USER_QUEUE}" and listening on :${port}`,
+    httpUp
+      ? `User microservice connected to RabbitMQ queue "${USER_QUEUE}" and listening on :${port}`
+      : `User microservice connected to RabbitMQ queue "${USER_QUEUE}" (HTTP :${port} unavailable — RMQ consumer still running)`,
   );
 }
 

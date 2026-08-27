@@ -49,6 +49,7 @@ export const CHAT_SUCCESS_MESSAGES = {
   MEMBER_REMOVED: 'Member removed successfully',
   LEFT: 'You left the conversation',
   GROUP_UPDATED: 'Group updated successfully',
+  GROUP_DELETED: 'Group deleted successfully',
   TYPING_UPDATED: 'Typing status updated',
   SEEN_UPDATED: 'Messages marked as seen',
   PRESENCE_FETCHED: 'Presence retrieved successfully',

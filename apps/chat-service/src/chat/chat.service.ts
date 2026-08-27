@@ -268,7 +268,9 @@ export class ChatService {
     }
 
     let messageId: string | null = null;
-    let nextReadAt = new Date();
+    // Always advance the read cursor to "now" so every message already in the
+    // thread is treated as read (WhatsApp-style while the chat is open).
+    const nextReadAt = new Date();
     if (payload.messageId) {
       const message = await this.messages.findOne({
         where: {
@@ -280,7 +282,6 @@ export class ChatService {
         return RpcErrors.notFound('Message');
       }
       messageId = message.id;
-      nextReadAt = message.createdAt;
     }
 
     if (!membership.lastReadAt || nextReadAt > membership.lastReadAt) {
@@ -389,17 +390,12 @@ export class ChatService {
       return RpcErrors.notFound('Membership');
     }
     if (membership.role === ConversationMemberRole.OWNER) {
-      const otherAdmins = conversation.members.filter(
-        (member) =>
-          !member.leftAt &&
-          member.userId !== payload.actorId &&
-          (member.role === ConversationMemberRole.OWNER ||
-            member.role === ConversationMemberRole.ADMIN),
-      );
-      if (otherAdmins.length === 0) {
-        return RpcErrors.forbidden(
-          'Transfer ownership or appoint an admin before leaving this group',
-        );
+      const remaining = conversation.members
+        .filter((member) => !member.leftAt && member.userId !== payload.actorId)
+        .sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
+      if (remaining[0]) {
+        remaining[0].role = ConversationMemberRole.OWNER;
+        await this.members.save(remaining[0]);
       }
     }
 
@@ -421,6 +417,32 @@ export class ChatService {
     conversation.name = name;
     await this.conversations.save(conversation);
     return this.getConversation(payload);
+  }
+
+  async deleteGroup(
+    payload: ConversationActorPayload,
+  ): Promise<{ deleted: boolean; recipientIds: string[] }> {
+    const conversation = await this.requireMembership(
+      payload.conversationId,
+      payload.actorId,
+    );
+    if (conversation.type !== ConversationType.GROUP) {
+      return RpcErrors.badRequest('Only group chats can be deleted');
+    }
+    if (conversation.createdBy !== payload.actorId) {
+      return RpcErrors.forbidden('Only the group creator can delete this group');
+    }
+
+    const recipientIds = conversation.members.map((member) => member.userId);
+    const now = new Date();
+    for (const member of conversation.members) {
+      if (!member.leftAt) {
+        member.leftAt = now;
+      }
+    }
+    await this.members.save(conversation.members);
+    await this.conversations.softDelete({ id: conversation.id });
+    return { deleted: true, recipientIds };
   }
 
   private async requireMembership(

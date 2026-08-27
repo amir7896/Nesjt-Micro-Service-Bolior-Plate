@@ -64,7 +64,7 @@ import { UsersModule } from './users/users.module';
     ProxyModule,
     AuthModule,
     UsersModule,
-    ChatModule,
+    ChatModule, // HTTP + Socket.IO chat surface
     HealthModule,
   ],
   providers: [

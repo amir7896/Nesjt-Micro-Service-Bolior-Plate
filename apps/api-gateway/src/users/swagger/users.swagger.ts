@@ -27,6 +27,16 @@ export const ListUsersDocs = () =>
     ApiPaginatedResponse(UserProfileSchema),
   );
 
+export const ListDirectoryDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'List people in the workspace',
+      description:
+        'Any signed-in member can search the directory to start a chat. Does not include admin-only actions.',
+    }),
+    ApiPaginatedResponse(UserProfileSchema),
+  );
+
 export const GetMyProfileDocs = () =>
   applyDecorators(
     ApiOperation({ summary: 'Get the authenticated user profile' }),

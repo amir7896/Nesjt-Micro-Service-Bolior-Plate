@@ -44,6 +44,7 @@ import {
   ChatDocs,
   CreateGroupChatDocs,
   CreatePrivateChatDocs,
+  DeleteGroupDocs,
   GetConversationDocs,
   GetPresenceDocs,
   LeaveConversationDocs,
@@ -293,6 +294,26 @@ export class ChatController {
     );
     await this.presence.attachToConversations([data]);
     return { message: CHAT_SUCCESS_MESSAGES.GROUP_UPDATED, data };
+  }
+
+  @Delete('conversations/:id')
+  @HttpCode(HttpStatus.OK)
+  @DeleteGroupDocs()
+  async deleteGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUuidPipe) id: string,
+  ) {
+    const data = await this.proxy.sendChat<{
+      deleted: boolean;
+      recipientIds: string[];
+    }>(CHAT_PATTERNS.DELETE_GROUP, {
+      actorId: user.id,
+      conversationId: id,
+    });
+    await this.conversationCache.invalidate(id);
+    this.chatGateway.broadcastGroupDeleted(id, data.recipientIds);
+    const { recipientIds: _recipientIds, ...result } = data;
+    return { message: CHAT_SUCCESS_MESSAGES.GROUP_DELETED, data: result };
   }
 
   private async assertUserExists(userId: string): Promise<void> {

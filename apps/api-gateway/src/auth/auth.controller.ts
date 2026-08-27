@@ -72,6 +72,7 @@ export class AuthController {
       }
       throw error;
     }
+    await this.sessionCache.set(result.user);
     return { message: AUTH_SUCCESS_MESSAGES.REGISTERED, data: result };
   }
 
@@ -86,6 +87,7 @@ export class AuthController {
       ip: request.ip,
       userAgent: request.headers['user-agent'],
     });
+    await this.sessionCache.set(result.user);
     return { message: AUTH_SUCCESS_MESSAGES.LOGGED_IN, data: result };
   }
 
@@ -103,6 +105,7 @@ export class AuthController {
         userAgent: request.headers['user-agent'],
       },
     );
+    await this.sessionCache.set(result.user);
     return { message: AUTH_SUCCESS_MESSAGES.TOKEN_REFRESHED, data: result };
   }
 

@@ -246,7 +246,15 @@ npm run docker:up
 
 Use `sudo npm run docker:up` if your user is not in the `docker` group yet.
 
-This starts:
+This starts **RabbitMQ** (`nest-rabbitmq`). That is the usual setup when PostgreSQL and Redis are already installed on the machine (ports `5432` and `6379`). `.env` should keep `POSTGRES_HOST=localhost` and `REDIS_HOST=localhost`.
+
+To run Postgres, RabbitMQ, and Redis **all in Docker** (only if those host ports are free):
+
+```bash
+npm run docker:up:all
+```
+
+That starts:
 
 - `nest-postgres` — PostgreSQL 17
 - `nest-rabbitmq` — RabbitMQ 4 + management UI
@@ -260,7 +268,7 @@ npm run docker:down
 
 ### Port already in use
 
-If Docker prints `failed to bind host port ... address already in use`, a local service already owns that port.
+If `docker:up:all` prints `failed to bind host port ... address already in use`, a local service already owns that port.
 
 | Port | Typical owner |
 | --- | --- |
@@ -275,23 +283,23 @@ sudo systemctl stop postgresql
 sudo systemctl stop rabbitmq-server
 sudo systemctl stop redis
 # then
-npm run docker:up
+npm run docker:up:all
 ```
 
-Or keep the local service and start only what you still need, for example RabbitMQ only:
+Or keep the local Postgres/Redis and start only RabbitMQ:
 
 ```bash
-docker compose up -d rabbitmq
+npm run docker:up
 ```
 
 In that case `.env` must point at the local Postgres/Redis (`localhost` and those credentials).
 
-Changing `POSTGRES_USER` or database names after the first `docker:up` does **not** update an existing volume. Recreate Postgres data once if credentials changed:
+Changing `POSTGRES_USER` or database names after the first `docker:up:all` does **not** update an existing volume. Recreate Postgres data once if credentials changed:
 
 ```bash
-docker compose down
-docker volume rm nestjs-micro-services_postgres_data
-npm run docker:up
+npm run docker:down
+docker volume rm backend_postgres_data
+npm run docker:up:all
 ```
 
 ## 6. Databases and migrations
@@ -331,7 +339,7 @@ That watches the API Gateway, Auth Service, User Service, and Chat Service toget
 
 Log in at `/api/docs`, then use **Authorize** and paste the access token.
 
-A Vite + React 18.3 test UI lives in [`Ms-Frontend`](./Ms-Frontend). With the gateway running: `npm run start:frontend` then open http://localhost:5173.
+A Vite + React 18.3 product UI (**Relay**) lives in [`Ms-Frontend`](./Ms-Frontend): landing, sign-in, messenger, and profile. With the gateway running: `npm run start:frontend` then open http://127.0.0.1:5173.
 
 ## Chat
 
@@ -382,9 +390,10 @@ Register always creates role `user`. Set `ADMIN_EMAIL` (and `ADMIN_PASSWORD` if 
 | `npm run start:auth` | Auth service only |
 | `npm run start:users` | User service only |
 | `npm run start:chat` | Chat service only |
-| `npm run start:frontend` | Vite React test UI (`Ms-Frontend`, port 5173) |
+| `npm run start:frontend` | Relay UI (`Ms-Frontend`, port 5173) |
 | `npm run migration:run` | Apply auth, users, and chat migrations |
-| `npm run docker:up` | Start PostgreSQL, RabbitMQ, and Redis |
+| `npm run docker:up` | Start RabbitMQ (use host Postgres/Redis if those ports are taken) |
+| `npm run docker:up:all` | Start PostgreSQL, RabbitMQ, and Redis in Docker |
 | `npm run docker:down` | Stop Compose containers (keep volumes) |
 
 ## Industry practices included

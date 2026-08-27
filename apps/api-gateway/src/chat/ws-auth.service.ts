@@ -1,18 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { RpcException } from '@nestjs/microservices';
 import { Socket } from 'socket.io';
 import {
   AuthenticatedUser,
   JwtPayload,
   UnauthorizedAppException,
 } from '@app/common';
-import { AUTH_PATTERNS } from '@app/contracts';
-import type { AuthUserView } from '@app/contracts';
 import { TokenBlacklistService } from '../auth/token-blacklist.service';
 import { AuthSessionCache } from '../auth/auth-session.cache';
-import { MicroserviceProxy } from '../infrastructure/proxy/microservice.proxy';
+import { userFromAccessToken } from '../auth/user-from-token';
 
 @Injectable()
 export class WsAuthService {
@@ -20,7 +17,6 @@ export class WsAuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly blacklist: TokenBlacklistService,
-    private readonly proxy: MicroserviceProxy,
     private readonly sessionCache: AuthSessionCache,
   ) {}
 
@@ -46,29 +42,8 @@ export class WsAuthService {
       throw new UnauthorizedAppException('Access token is required');
     }
 
-    try {
-      const cached = await this.sessionCache.get(payload.sub);
-      const user =
-        cached ??
-        (await this.proxy.sendAuth<AuthUserView>(AUTH_PATTERNS.VALIDATE, {
-          userId: payload.sub,
-        }));
-      if (!cached) {
-        await this.sessionCache.set(user);
-      }
-      return {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        isEmailVerified: user.isEmailVerified,
-      };
-    } catch (error) {
-      if (error instanceof RpcException) {
-        throw new UnauthorizedAppException('User session is no longer valid');
-      }
-      throw error;
-    }
+    const cached = await this.sessionCache.get(payload.sub);
+    return userFromAccessToken(payload, cached);
   }
 
   private extractToken(client: Socket): string | null {

@@ -28,6 +28,7 @@ import {
   DeleteUserDocs,
   GetMyProfileDocs,
   GetUserDocs,
+  ListDirectoryDocs,
   ListUsersDocs,
   UpdateMyProfileDocs,
   UpdateUserDocs,
@@ -57,6 +58,22 @@ export class UsersController {
       {
         userId: user.id,
       },
+    );
+    return { message: USER_SUCCESS_MESSAGES.PROFILE_FETCHED, data };
+  }
+
+  @Get('directory')
+  @ListDirectoryDocs()
+  async directory(@Query() query: PaginationQueryDto) {
+    const data = await this.proxy.sendUser(USER_PATTERNS.FIND_ALL, query);
+    return { message: USER_SUCCESS_MESSAGES.USERS_FETCHED, data };
+  }
+
+  @Get('lookup/:userId')
+  async lookupByUserId(@Param('userId', ParseUuidPipe) userId: string) {
+    const data = await this.proxy.sendUser<UserProfileView>(
+      USER_PATTERNS.FIND_BY_USER_ID,
+      { userId },
     );
     return { message: USER_SUCCESS_MESSAGES.PROFILE_FETCHED, data };
   }
