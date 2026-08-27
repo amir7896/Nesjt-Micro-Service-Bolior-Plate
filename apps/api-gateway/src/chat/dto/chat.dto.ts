@@ -6,6 +6,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -14,8 +15,9 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
-import { MessageType } from '@app/common';
+import { ALLOWED_REACTIONS, ConversationMemberRole, MessageType } from '@app/common';
 
 export class CreatePrivateChatDto {
   @ApiProperty({
@@ -47,16 +49,112 @@ export class CreateGroupChatDto {
 }
 
 export class SendMessageDto {
-  @ApiProperty({ example: 'Hello there' })
+  @ApiPropertyOptional({ example: 'Hello there' })
+  @ValidateIf((dto: SendMessageDto) => !dto.attachmentUrl)
   @IsString()
   @IsNotEmpty()
   @MaxLength(4000)
-  body!: string;
+  body?: string;
 
   @ApiPropertyOptional({ enum: MessageType, default: MessageType.TEXT })
   @IsOptional()
   @IsEnum(MessageType)
   type?: MessageType;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Message id this text is replying to',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  replyToMessageId?: string;
+
+  @ApiPropertyOptional({ example: '/uploads/abc.jpg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  attachmentUrl?: string;
+
+  @ApiPropertyOptional({ example: 'image/jpeg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  attachmentMime?: string;
+
+  @ApiPropertyOptional({ example: 'photo.jpg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  attachmentName?: string;
+
+  @ApiPropertyOptional({ example: 204800 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  attachmentSize?: number;
+}
+
+export class EditMessageDto {
+  @ApiProperty({ example: 'Updated text' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4000)
+  body!: string;
+}
+
+export class ReactMessageDto {
+  @ApiProperty({ example: '👍', enum: ALLOWED_REACTIONS })
+  @IsString()
+  @IsIn([...ALLOWED_REACTIONS])
+  emoji!: string;
+}
+
+export class ForwardMessageDto {
+  @ApiProperty({
+    format: 'uuid',
+    description: 'Conversation to forward the message into',
+  })
+  @IsUUID('4')
+  conversationId!: string;
+}
+
+export class MuteConversationDto {
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  muted!: boolean;
+}
+
+export class PinConversationDto {
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  pinned!: boolean;
+}
+
+export class DeleteMessageDto {
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'When true, delete for everyone (sender only, within 60 minutes)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  forEveryone?: boolean;
+}
+
+export class SetMemberRoleDto {
+  @ApiProperty({
+    enum: [ConversationMemberRole.ADMIN, ConversationMemberRole.MEMBER],
+    example: ConversationMemberRole.ADMIN,
+  })
+  @IsIn([ConversationMemberRole.ADMIN, ConversationMemberRole.MEMBER])
+  role!: ConversationMemberRole.ADMIN | ConversationMemberRole.MEMBER;
+}
+
+export class BlockUserDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID('4')
+  userId!: string;
 }
 
 export class TypingDto {
@@ -108,4 +206,12 @@ export class ChatPageQueryDto {
   @Min(1)
   @Max(100)
   limit = 20;
+}
+
+export class SearchMessagesQueryDto extends ChatPageQueryDto {
+  @ApiProperty({ example: 'hello', description: 'Search text' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  q!: string;
 }

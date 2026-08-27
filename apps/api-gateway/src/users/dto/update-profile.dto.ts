@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsDateString,
   IsOptional,
   IsString,
@@ -42,4 +43,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsDateString({}, { message: 'dateOfBirth must be an ISO date string' })
   dateOfBirth?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'When false, others will not see your last-seen timestamp',
+  })
+  @IsOptional()
+  @IsBoolean()
+  showLastSeen?: boolean;
 }

@@ -112,6 +112,9 @@ export class UsersService {
     profile.bio = payload.bio ?? profile.bio;
     profile.avatar = payload.avatar ?? profile.avatar;
     profile.dateOfBirth = payload.dateOfBirth ?? profile.dateOfBirth;
+    if (typeof payload.showLastSeen === 'boolean') {
+      profile.showLastSeen = payload.showLastSeen;
+    }
 
     const saved = await this.profiles.save(profile);
     return this.toView(saved);
@@ -137,6 +140,7 @@ export class UsersService {
       bio: profile.bio,
       avatar: profile.avatar,
       dateOfBirth: profile.dateOfBirth,
+      showLastSeen: profile.showLastSeen !== false,
       createdAt: profile.createdAt.toISOString(),
       updatedAt: profile.updatedAt.toISOString(),
     };

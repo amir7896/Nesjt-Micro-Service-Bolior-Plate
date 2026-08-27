@@ -11,9 +11,14 @@ export enum ConversationMemberRole {
 
 export enum MessageType {
   TEXT = 'text',
+  IMAGE = 'image',
+  FILE = 'file',
 }
 
 export enum PresenceStatus {
   ONLINE = 'online',
   OFFLINE = 'offline',
 }
+
+export const ALLOWED_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const;
+export type AllowedReaction = (typeof ALLOWED_REACTIONS)[number];

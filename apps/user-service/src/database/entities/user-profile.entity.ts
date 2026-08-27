@@ -42,6 +42,9 @@ export class UserProfile {
   @Column({ type: 'date', nullable: true })
   dateOfBirth!: string | null;
 
+  @Column({ type: 'boolean', default: true })
+  showLastSeen!: boolean;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 

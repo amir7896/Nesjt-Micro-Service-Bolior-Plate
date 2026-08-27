@@ -7,6 +7,9 @@ import { ChatModule } from './chat/chat.module';
 import { Conversation } from './database/entities/conversation.entity';
 import { ConversationMember } from './database/entities/conversation-member.entity';
 import { Message } from './database/entities/message.entity';
+import { MessageHide } from './database/entities/message-hide.entity';
+import { MessageReaction } from './database/entities/message-reaction.entity';
+import { UserBlock } from './database/entities/user-block.entity';
 
 @Module({
   imports: [
@@ -24,7 +27,14 @@ import { Message } from './database/entities/message.entity';
           username: config.getOrThrow<string>('POSTGRES_USER'),
           password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
           database: config.getOrThrow<string>('CHAT_POSTGRES_DATABASE'),
-          entities: [Conversation, ConversationMember, Message],
+          entities: [
+            Conversation,
+            ConversationMember,
+            Message,
+            MessageHide,
+            MessageReaction,
+            UserBlock,
+          ],
           poolMax: config.get<number>('POSTGRES_POOL_MAX', 20),
           poolMin: config.get<number>('POSTGRES_POOL_MIN', 2),
         }),

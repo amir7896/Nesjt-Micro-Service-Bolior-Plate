@@ -1,5 +1,7 @@
 import cluster from 'node:cluster';
+import { existsSync, mkdirSync } from 'node:fs';
 import os from 'node:os';
+import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -35,6 +37,11 @@ import { UserProfileSchema } from './users/swagger/users.schema';
 
 loadEnv();
 
+const UPLOADS_ROOT = join(process.cwd(), 'uploads');
+if (!existsSync(UPLOADS_ROOT)) {
+  mkdirSync(UPLOADS_ROOT, { recursive: true });
+}
+
 function gatewayWorkers(): number {
   const raw = Number(process.env.GATEWAY_WORKERS ?? 1);
   if (raw === 0) {
@@ -68,6 +75,8 @@ async function bootstrap() {
       origin === '*' ? true : origin.split(',').map((item) => item.trim()),
     credentials: true,
   });
+
+  app.use('/uploads', express.static(UPLOADS_ROOT));
 
   const prefix = config.get<string>('GATEWAY_GLOBAL_PREFIX', 'api');
   app.setGlobalPrefix(prefix);

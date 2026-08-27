@@ -3,14 +3,23 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CHAT_PATTERNS } from '@app/contracts';
 import type {
   AddMembersPayload,
+  BlockUserPayload,
   ConversationActorPayload,
   CreateGroupChatPayload,
   CreatePrivateChatPayload,
+  DeleteMessagePayload,
+  EditMessagePayload,
+  ForwardMessagePayload,
   ListConversationsPayload,
   ListMessagesPayload,
   MarkSeenPayload,
+  MuteConversationPayload,
+  PinConversationPayload,
+  ReactMessagePayload,
   RemoveMemberPayload,
+  SearchMessagesPayload,
   SendMessagePayload,
+  SetMemberRolePayload,
   UpdateGroupPayload,
 } from '@app/contracts';
 import { ChatService } from './chat.service';
@@ -44,14 +53,49 @@ export class ChatController {
     return this.chatService.listMessages(payload);
   }
 
+  @MessagePattern(CHAT_PATTERNS.SEARCH_MESSAGES)
+  searchMessages(@Payload() payload: SearchMessagesPayload) {
+    return this.chatService.searchMessages(payload);
+  }
+
   @MessagePattern(CHAT_PATTERNS.SEND_MESSAGE)
   sendMessage(@Payload() payload: SendMessagePayload) {
     return this.chatService.sendMessage(payload);
   }
 
+  @MessagePattern(CHAT_PATTERNS.EDIT_MESSAGE)
+  editMessage(@Payload() payload: EditMessagePayload) {
+    return this.chatService.editMessage(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.REACT_MESSAGE)
+  reactMessage(@Payload() payload: ReactMessagePayload) {
+    return this.chatService.reactMessage(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.FORWARD_MESSAGE)
+  forwardMessage(@Payload() payload: ForwardMessagePayload) {
+    return this.chatService.forwardMessage(payload);
+  }
+
   @MessagePattern(CHAT_PATTERNS.MARK_SEEN)
   markSeen(@Payload() payload: MarkSeenPayload) {
     return this.chatService.markSeen(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.MUTE_CONVERSATION)
+  muteConversation(@Payload() payload: MuteConversationPayload) {
+    return this.chatService.muteConversation(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.PIN_CONVERSATION)
+  pinConversation(@Payload() payload: PinConversationPayload) {
+    return this.chatService.pinConversation(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.DELETE_MESSAGE)
+  deleteMessage(@Payload() payload: DeleteMessagePayload) {
+    return this.chatService.deleteMessage(payload);
   }
 
   @MessagePattern(CHAT_PATTERNS.ADD_MEMBERS)
@@ -62,6 +106,11 @@ export class ChatController {
   @MessagePattern(CHAT_PATTERNS.REMOVE_MEMBER)
   removeMember(@Payload() payload: RemoveMemberPayload) {
     return this.chatService.removeMember(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.SET_MEMBER_ROLE)
+  setMemberRole(@Payload() payload: SetMemberRolePayload) {
+    return this.chatService.setMemberRole(payload);
   }
 
   @MessagePattern(CHAT_PATTERNS.LEAVE)
@@ -77,5 +126,20 @@ export class ChatController {
   @MessagePattern(CHAT_PATTERNS.DELETE_GROUP)
   deleteGroup(@Payload() payload: ConversationActorPayload) {
     return this.chatService.deleteGroup(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.BLOCK_USER)
+  blockUser(@Payload() payload: BlockUserPayload) {
+    return this.chatService.blockUser(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.UNBLOCK_USER)
+  unblockUser(@Payload() payload: BlockUserPayload) {
+    return this.chatService.unblockUser(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.LIST_BLOCKS)
+  listBlocks(@Payload() payload: { actorId: string }) {
+    return this.chatService.listBlocks(payload);
   }
 }

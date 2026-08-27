@@ -47,5 +47,11 @@ export class ConversationMember {
   lastReadAt!: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
+  mutedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  pinnedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
   leftAt!: Date | null;
 }

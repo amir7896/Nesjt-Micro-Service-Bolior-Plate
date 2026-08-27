@@ -202,6 +202,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  broadcastMessageDeleted(
+    message: MessageView,
+    recipientIds: string[] = [],
+  ): void {
+    this.emitToMembers(
+      'chat:message_deleted',
+      message,
+      message.conversationId,
+      recipientIds,
+    );
+  }
+
   broadcastTyping(
     conversationId: string,
     userId: string,
@@ -234,13 +246,44 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     lastSeenAt: string | null,
     conversationIds: string[],
   ): void {
+    if (!this.server) {
+      return;
+    }
+    const payload = {
+      userId,
+      status,
+      lastSeenAt,
+    };
+    void this.fanOutPresence(payload, conversationIds);
+  }
+
+  private async fanOutPresence(
+    payload: {
+      userId: string;
+      status: PresenceStatus;
+      lastSeenAt: string | null;
+      conversationId?: string;
+    },
+    conversationIds: string[],
+  ): Promise<void> {
+    if (!this.server || conversationIds.length === 0) {
+      return;
+    }
+    const peerIds = new Set<string>();
     for (const conversationId of conversationIds) {
-      this.server?.to(`conversation:${conversationId}`).emit('chat:presence', {
-        userId,
-        status,
-        lastSeenAt,
+      this.server.to(`conversation:${conversationId}`).emit('chat:presence', {
+        ...payload,
         conversationId,
       });
+      const members = await this.conversationCache.getMemberIds(conversationId);
+      for (const memberId of members ?? []) {
+        if (memberId !== payload.userId) {
+          peerIds.add(memberId);
+        }
+      }
+    }
+    for (const peerId of peerIds) {
+      this.server.to(`user:${peerId}`).emit('chat:presence', payload);
     }
   }
 

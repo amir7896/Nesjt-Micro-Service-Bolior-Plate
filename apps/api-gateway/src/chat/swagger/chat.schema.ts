@@ -19,6 +19,9 @@ export class ConversationMemberSchema {
   @ApiPropertyOptional({ nullable: true })
   lastReadAt!: string | null;
 
+  @ApiProperty({ example: false })
+  muted!: boolean;
+
   @ApiProperty({ enum: PresenceStatus })
   status!: PresenceStatus;
 
@@ -41,6 +44,34 @@ export class MessageSchema {
 
   @ApiProperty({ enum: MessageType, example: MessageType.TEXT })
   type!: MessageType;
+
+  @ApiPropertyOptional({ nullable: true })
+  replyTo!: {
+    id: string;
+    senderId: string;
+    body: string;
+    deletedForEveryone: boolean;
+  } | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  attachment!: {
+    url: string;
+    mime: string;
+    name: string;
+    size: number;
+  } | null;
+
+  @ApiProperty({ type: 'array', items: { type: 'object' } })
+  reactions!: Array<{ emoji: string; count: number; reactedByMe: boolean }>;
+
+  @ApiPropertyOptional({ nullable: true })
+  editedAt!: string | null;
+
+  @ApiProperty({ example: false })
+  forwarded!: boolean;
+
+  @ApiProperty({ example: false })
+  deletedForEveryone!: boolean;
 
   @ApiProperty({
     type: [String],
@@ -73,6 +104,12 @@ export class ConversationSchema {
 
   @ApiPropertyOptional({ nullable: true })
   lastReadAt!: string | null;
+
+  @ApiProperty({ example: false })
+  muted!: boolean;
+
+  @ApiProperty({ example: false })
+  pinned!: boolean;
 
   @ApiProperty({ example: 0 })
   unreadCount!: number;

@@ -46,6 +46,10 @@ lerna-debug.log*
 # docker
 docker-data
 
+# uploads
+/uploads/*
+!/uploads/.gitkeep
+
 # frontend
 Ms-Frontend/node_modules
 Ms-Frontend/dist

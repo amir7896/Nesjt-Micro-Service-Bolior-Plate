@@ -13,6 +13,7 @@ export interface UpdateProfilePayload {
   bio?: string;
   avatar?: string;
   dateOfBirth?: string;
+  showLastSeen?: boolean;
 }
 
 export interface FindUsersPayload {
@@ -33,6 +34,7 @@ export interface UserProfileView {
   bio: string | null;
   avatar: string | null;
   dateOfBirth: string | null;
+  showLastSeen: boolean;
   createdAt: string;
   updatedAt: string;
 }
